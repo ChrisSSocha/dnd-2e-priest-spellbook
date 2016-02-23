@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.1/jquery.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/0.71/jquery.csv-0.71.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.4.0/knockout-min.js"></script>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+
+    <link rel="stylesheet" href="print.css" media="print">
+</head>
+<body>
+<div class="container-fluid">
+    <h1>D&D 2e Priest Spells</h1>
+    <button type="button" class="btn btn-default dont-print" onclick="window.print()">Print me!</button>
+
+    <div class="dont-print">
+        <h3>Major Spheres</h3>
+        <div data-bind="foreach: spheres">
+            <input type="checkbox" data-bind="checkedValue: $data, checked: $root.majorSpheres" />
+            <label data-bind="text: $data"></label>
+        </div>
+
+        <h3>Minor Spheres</h3>
+        <div data-bind="foreach: spheres">
+            <input type="checkbox" data-bind="checkedValue: $data, checked: $root.minorSpheres" />
+            <label data-bind="text: $data"></label>
+        </div>
+    </div>
+
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Type</th>
+            <th>Level</th>
+            <th>Name</th>
+        </tr>
+        </thead>
+        <tbody data-bind="foreach: filteredSpells">
+        <tr>
+            <td>
+                <span data-bind="text: type" ></span>
+            </td>
+            <td>
+                <span data-bind="text: level" ></span>
+            </td>
+            <td>
+                <span data-bind="text: name" ></span>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <script type="text/javascript">
+
+        function Spell(name, type, level) {
+            this.name = ko.observable(name);
+            this.type = ko.observable(type);
+            this.level = ko.observable(level);
+        }
+
+        function getSpheres(spells) {
+            return spells
+                    .map(function(spell) {
+                        return spell.type;
+                    })
+                    .filter(function(value, index, array) {
+                        return array.indexOf(value) == index;
+                    });
+        }
+
+        var viewModel = {
+            spheres: ko.observableArray(),
+            majorSpheres: ko.observableArray(),
+            minorSpheres: ko.observableArray(),
+            spells: ko.observableArray(),
+            filter: ko.observable("")
+        };
+
+        viewModel.filteredSpells = ko.dependentObservable(function() {
+            var majorSpheres = this.majorSpheres();
+            var minorSpheres = this.minorSpheres();
+            return ko.utils.arrayFilter(this.spells(), function(spell) {
+
+                var isMinorSphere = minorSpheres.indexOf(spell.type()) > -1 && spell.level() < 4;
+                var isMajorSphere =  majorSpheres.indexOf(spell.type()) > -1;
+
+                return isMajorSphere || isMinorSphere;
+            });
+        }, viewModel);
+
+        $(document).ready(function () {
+
+            var priestSpells = $.get("data/priest.csv");
+
+            priestSpells.done(function(spellsCsv){
+                var spells = $.csv.toObjects(spellsCsv);
+
+                var mappedSpells = ko.utils.arrayMap(spells, function(spell) {
+                    return new Spell(spell.name, spell.type, spell.level);
+                });
+
+                var spheres = getSpheres(spells);
+
+                viewModel.spells(mappedSpells);
+                viewModel.spheres(spheres);
+                ko.applyBindings(viewModel);
+            });
+
+        });
+    </script>
+</div>
+</body>
+</html>

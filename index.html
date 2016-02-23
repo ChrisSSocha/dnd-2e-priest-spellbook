@@ -90,6 +90,9 @@
                 var isMajorSphere =  majorSpheres.indexOf(spell.type()) > -1;
 
                 return isMajorSphere || isMinorSphere;
+            }).sort(function(left, right) {
+                var nameOrder = left.name() == right.name() ? 0 : (left.name() < right.name() ? -1 : 1);
+                return left.level() == right.level() ? nameOrder : (left.level() < right.level() ? -1 : 1);
             });
         }, viewModel);
 

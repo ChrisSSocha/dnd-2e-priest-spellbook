@@ -12,30 +12,60 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
 
     <link rel="stylesheet" href="print.css" media="print">
+    <link rel="stylesheet" href="spellbook.css">
 </head>
 <body>
 <div class="container-fluid">
-    <h1>D&D 2e Priest Spells</h1>
-    <button type="button" class="btn btn-default dont-print" onclick="window.print()">Print me!</button>
+    <div>
+        <h1>D&D 2e Priest Spells
+            <button type="button" class="btn btn-default dont-print" onclick="window.print()"><span class="glyphicon glyphicon-print" aria-hidden="true"></span> Print</button>
+        </h1>
+    </div>
 
     <div class="dont-print">
-        <h3>Major Spheres</h3>
-        <div data-bind="foreach: spheres">
-            <input type="checkbox" data-bind="checkedValue: $data, checked: $root.majorSpheres" />
-            <label data-bind="text: $data"></label>
+
+        <p>Select all your spells from the spheres/schools below:</p>
+
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <ul class="nav nav-tabs" role="tablist">
+                    <li role="presentation" class="active"><a href="#minor-spheres" aria-controls="minor-spheres" role="tab" data-toggle="tab">Minor Spheres</a></li>
+                    <li role="presentation"><a href="#major-spheres" aria-controls="major-spheres" role="tab" data-toggle="tab">Major Spheres</a></li>
+                    <li role="presentation"><a href="#wizard-spells" aria-controls="wizard-spells" role="tab" data-toggle="tab">Wizard Spells</a></li>
+                    <li role="presentation"><a href="#speciality-priests" aria-controls="speciality-priests" role="tab" data-toggle="tab">Speciality Priests</a></li>
+                </ul>
+            </div>
+            <div class="panel-body">
+
+                <div class="tab-content">
+                    <div role="tabpanel" class="tab-pane active row" id="minor-spheres" data-bind="foreach: spheres">
+                        <div class="col-md-3">
+                            <input type="checkbox" data-bind="checkedValue: $data, checked: $root.majorSpheres" />
+                            <label data-bind="text: $data"></label>
+                        </div>
+                    </div>
+                    <div role="tabpanel" class="tab-pane row" id="major-spheres" data-bind="foreach: spheres">
+                        <div class="col-md-3">
+                            <input type="checkbox" data-bind="checkedValue: $data, checked: $root.minorSpheres" />
+                            <label data-bind="text: $data"></label>
+                        </div>
+                    </div>
+                    <div role="tabpanel" class="tab-pane row" id="wizard-spells" data-bind="foreach: schools">
+                        <div class="col-md-3">
+                            <input type="checkbox" data-bind="checkedValue: $data, checked: $root.selectedSchools" />
+                            <label data-bind="text: $data"></label>
+                        </div>
+                    </div>
+                    <div role="tabpanel" class="tab-pane row" id="speciality-priests" data-bind="foreach: deities">
+                        <div class="col-md-3">
+                            <input type="checkbox" data-bind="checkedValue: $data, checked: $root.selectedDeities" />
+                            <label data-bind="text: $data"></label>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <h3>Minor Spheres</h3>
-        <div data-bind="foreach: spheres">
-            <input type="checkbox" data-bind="checkedValue: $data, checked: $root.minorSpheres" />
-            <label data-bind="text: $data"></label>
-        </div>
-
-        <h3>Schools</h3>
-        <div data-bind="foreach: schools">
-            <input type="checkbox" data-bind="checkedValue: $data, checked: $root.selectedSchools" />
-            <label data-bind="text: $data"></label>
-        </div>
     </div>
 
     <table class="table">
@@ -86,7 +116,11 @@
             priestSpells: ko.observableArray(),
             wizardSpells: ko.observableArray(),
             schools: ko.observableArray(),
-            selectedSchools: ko.observableArray()
+            selectedSchools: ko.observableArray(),
+            deitySpells: ko.observableArray(),
+            deities: ko.observableArray(),
+            selectedDeities: ko.observableArray()
+
         };
 
         viewModel.filteredSpells = ko.dependentObservable(function() {
@@ -105,7 +139,13 @@
                 return schools.indexOf(spell.type()) > -1;
             });
 
-            return filteredPriestSpells.concat(filteredWizardSpells).sort(function(left, right) {
+            var deities = this.selectedDeities();
+            var filteredDeitySpells = this.deitySpells().filter(function(spell) {
+                return deities.indexOf(spell.type()) > -1;
+            });
+
+            var filteredSpells = filteredPriestSpells.concat(filteredWizardSpells).concat(filteredDeitySpells);
+            return filteredSpells.sort(function(left, right) {
                 var nameOrder = left.name() == right.name() ? 0 : (left.name() < right.name() ? -1 : 1);
                 return left.level() == right.level() ? nameOrder : (left.level() < right.level() ? -1 : 1);
             });
@@ -116,10 +156,12 @@
 
             var priestSpells = $.get("data/priest.csv");
             var wizardSpells = $.get("data/wizard.csv");
+            var deitySpells = $.get("data/priest-additional.csv");
 
-            $.when(priestSpells, wizardSpells).done(function(priest, wizard){
+            $.when(priestSpells, wizardSpells, deitySpells).done(function(priest, wizard, deities){
                 var priestSpells = $.csv.toObjects(priest[0]);
                 var wizardSpells = $.csv.toObjects(wizard[0]);
+                var deitySpells = $.csv.toObjects(deities[0]);
 
                 viewModel.priestSpells(priestSpells.map(function (spell) {
                     return new Spell(spell.name, spell.type, spell.level);
@@ -129,8 +171,13 @@
                     return new Spell(spell.name, spell.type, spell.level);
                 }));
 
+                viewModel.deitySpells(deitySpells.map(function (spell) {
+                    return new Spell(spell.name, spell.type, spell.level);
+                }));
+
                 viewModel.spheres(getAllTypes(priestSpells));
                 viewModel.schools(getAllTypes(wizardSpells));
+                viewModel.deities(getAllTypes(deitySpells));
                 ko.applyBindings(viewModel);
             });
 

@@ -1,2 +1,2 @@
-# [priest-spellbook](http://chris.socha.technology/priest-spellbook/)
+# [spellbook](http://chris.socha.technology/spellbook/)
 

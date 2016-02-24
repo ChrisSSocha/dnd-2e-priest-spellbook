@@ -40,13 +40,13 @@
                 <div class="tab-content">
                     <div role="tabpanel" class="tab-pane active row" id="minor-spheres" data-bind="foreach: spheres">
                         <div class="col-md-3">
-                            <input type="checkbox" data-bind="checkedValue: $data, checked: $root.majorSpheres" />
+                            <input type="checkbox" data-bind="checkedValue: $data, checked: $root.minorSpheres" />
                             <label data-bind="text: $data"></label>
                         </div>
                     </div>
                     <div role="tabpanel" class="tab-pane row" id="major-spheres" data-bind="foreach: spheres">
                         <div class="col-md-3">
-                            <input type="checkbox" data-bind="checkedValue: $data, checked: $root.minorSpheres" />
+                            <input type="checkbox" data-bind="checkedValue: $data, checked: $root.majorSpheres" />
                             <label data-bind="text: $data"></label>
                         </div>
                     </div>

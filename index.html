@@ -30,6 +30,12 @@
             <input type="checkbox" data-bind="checkedValue: $data, checked: $root.minorSpheres" />
             <label data-bind="text: $data"></label>
         </div>
+
+        <h3>Schools</h3>
+        <div data-bind="foreach: schools">
+            <input type="checkbox" data-bind="checkedValue: $data, checked: $root.selectedSchools" />
+            <label data-bind="text: $data"></label>
+        </div>
     </div>
 
     <table class="table">
@@ -63,7 +69,7 @@
             this.level = ko.observable(level);
         }
 
-        function getSpheres(spells) {
+        function getAllTypes(spells) {
             return spells
                     .map(function(spell) {
                         return spell.type;
@@ -77,40 +83,54 @@
             spheres: ko.observableArray(),
             majorSpheres: ko.observableArray(),
             minorSpheres: ko.observableArray(),
-            spells: ko.observableArray(),
-            filter: ko.observable("")
+            priestSpells: ko.observableArray(),
+            wizardSpells: ko.observableArray(),
+            schools: ko.observableArray(),
+            selectedSchools: ko.observableArray()
         };
 
         viewModel.filteredSpells = ko.dependentObservable(function() {
             var majorSpheres = this.majorSpheres();
             var minorSpheres = this.minorSpheres();
-            return ko.utils.arrayFilter(this.spells(), function(spell) {
+            var filteredPriestSpells = this.priestSpells().filter(function(spell) {
 
                 var isMinorSphere = minorSpheres.indexOf(spell.type()) > -1 && spell.level() < 4;
                 var isMajorSphere =  majorSpheres.indexOf(spell.type()) > -1;
 
                 return isMajorSphere || isMinorSphere;
-            }).sort(function(left, right) {
+            });
+
+            var schools = this.selectedSchools();
+            var filteredWizardSpells =  this.wizardSpells().filter(function(spell) {
+                return schools.indexOf(spell.type()) > -1;
+            });
+
+            return filteredPriestSpells.concat(filteredWizardSpells).sort(function(left, right) {
                 var nameOrder = left.name() == right.name() ? 0 : (left.name() < right.name() ? -1 : 1);
                 return left.level() == right.level() ? nameOrder : (left.level() < right.level() ? -1 : 1);
             });
+
         }, viewModel);
 
         $(document).ready(function () {
 
             var priestSpells = $.get("data/priest.csv");
+            var wizardSpells = $.get("data/wizard.csv");
 
-            priestSpells.done(function(spellsCsv){
-                var spells = $.csv.toObjects(spellsCsv);
+            $.when(priestSpells, wizardSpells).done(function(priest, wizard){
+                var priestSpells = $.csv.toObjects(priest[0]);
+                var wizardSpells = $.csv.toObjects(wizard[0]);
 
-                var mappedSpells = ko.utils.arrayMap(spells, function(spell) {
+                viewModel.priestSpells(priestSpells.map(function (spell) {
                     return new Spell(spell.name, spell.type, spell.level);
-                });
+                }));
 
-                var spheres = getSpheres(spells);
+                viewModel.wizardSpells(wizardSpells.map(function (spell) {
+                    return new Spell(spell.name, spell.type, spell.level);
+                }));
 
-                viewModel.spells(mappedSpells);
-                viewModel.spheres(spheres);
+                viewModel.spheres(getAllTypes(priestSpells));
+                viewModel.schools(getAllTypes(wizardSpells));
                 ko.applyBindings(viewModel);
             });
 
